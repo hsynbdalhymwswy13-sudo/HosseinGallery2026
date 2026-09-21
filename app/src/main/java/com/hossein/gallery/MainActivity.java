@@ -30,25 +30,55 @@ public class MainActivity extends Activity {
         title.setTextColor(Color.BLACK);
         title.setGravity(Gravity.CENTER);
 
-        Button button = new Button(this);
-        button.setText("انتخاب عکس از گالری");
+        Button galleryButton = new Button(this);
+        galleryButton.setText("🖼️ گالری");
+
+        Button albumButton = new Button(this);
+        albumButton.setText("📁 آلبوم‌ها");
+
+        Button selectButton = new Button(this);
+        selectButton.setText("➕ انتخاب عکس");
+
+        Button deleteButton = new Button(this);
+        deleteButton.setText("🗑️ حذف عکس");
+
+        Button backButton = new Button(this);
+        backButton.setText("↩️ برگشت");
 
         imageView = new ImageView(this);
         imageView.setAdjustViewBounds(true);
 
         layout.addView(title);
-        layout.addView(button);
+        layout.addView(galleryButton);
+        layout.addView(albumButton);
+        layout.addView(selectButton);
+        layout.addView(deleteButton);
+        layout.addView(backButton);
         layout.addView(imageView);
 
         setContentView(layout);
 
-        button.setOnClickListener(new View.OnClickListener() {
+        selectButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.setType("image/*");
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 startActivityForResult(intent, 100);
+            }
+        });
+
+        deleteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                imageView.setImageDrawable(null);
+            }
+        });
+
+        backButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
             }
         });
     }
