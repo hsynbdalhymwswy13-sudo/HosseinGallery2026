@@ -1,94 +1,208 @@
 package com.hossein.gallery;
 
+import android.Manifest;
 import android.app.Activity;
 import android.os.Bundle;
-import android.content.Intent;
-import android.graphics.Color;
-import android.view.Gravity;
+import android.os.Build;
+import android.content.pm.PackageManager;
+import android.provider.MediaStore;
+import android.database.Cursor;
+import android.net.Uri;
 import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.view.Gravity;
+import android.graphics.Color;
+import android.widget.*;
+import java.util.ArrayList;
 
 public class MainActivity extends Activity {
 
-    ImageView imageView;
+    GridView gridView;
+    ArrayList<Uri> photos = new ArrayList<>();
+    ImageAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setGravity(Gravity.CENTER);
-        layout.setPadding(30, 30, 30, 30);
+        if (Build.VERSION.SDK_INT >= 33) {
+            requestPermissions(
+                new String[]{Manifest.permission.READ_MEDIA_IMAGES},
+                10
+            );
+        } else {
+            requestPermissions(
+                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                10
+            );
+        }
+
+        createGallery();
+    }
+
+    void createGallery() {
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(Color.WHITE);
 
         TextView title = new TextView(this);
-        title.setText("گالری حسین ❤️");
-        title.setTextSize(28);
+        title.setText("گالری حسین");
+        title.setTextSize(26);
         title.setTextColor(Color.BLACK);
         title.setGravity(Gravity.CENTER);
+        title.setPadding(10, 30, 10, 25);
 
-        Button galleryButton = new Button(this);
-        galleryButton.setText("🖼️ گالری");
+        gridView = new GridView(this);
+        gridView.setNumColumns(3);
+        gridView.setVerticalSpacing(4);
+        gridView.setHorizontalSpacing(4);
+        gridView.setPadding(4, 4, 4, 4);
 
-        Button albumButton = new Button(this);
-        albumButton.setText("📁 آلبوم‌ها");
+        root.addView(title);
+        root.addView(gridView,
+                new LinearLayout.LayoutParams(
+                        -1,
+                        0,
+                        1
+                ));
 
-        Button selectButton = new Button(this);
-        selectButton.setText("➕ انتخاب عکس");
+        setContentView(root);
 
-        Button deleteButton = new Button(this);
-        deleteButton.setText("🗑️ حذف عکس");
+        loadPhotos();
+    }
 
-        Button backButton = new Button(this);
-        backButton.setText("↩️ برگشت");
+    void loadPhotos() {
 
-        imageView = new ImageView(this);
-        imageView.setAdjustViewBounds(true);
+        photos.clear();
 
-        layout.addView(title);
-        layout.addView(galleryButton);
-        layout.addView(albumButton);
-        layout.addView(selectButton);
-        layout.addView(deleteButton);
-        layout.addView(backButton);
-        layout.addView(imageView);
+        String[] projection = {
+                MediaStore.Images.Media._ID
+        };
 
-        setContentView(layout);
+        Cursor cursor = getContentResolver().query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                projection,
+                null,
+                null,
+                MediaStore.Images.Media.DATE_ADDED + " DESC"
+        );
 
-        selectButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                intent.setType("image/*");
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                startActivityForResult(intent, 100);
+        if (cursor != null) {
+
+            int idColumn = cursor.getColumnIndexOrThrow(
+                    MediaStore.Images.Media._ID
+            );
+
+            while (cursor.moveToNext()) {
+
+                long id = cursor.getLong(idColumn);
+
+                Uri photoUri = Uri.withAppendedPath(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        String.valueOf(id)
+                );
+
+                photos.add(photoUri);
             }
-        });
 
-        deleteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                imageView.setImageDrawable(null);
-            }
-        });
+            cursor.close();
+        }
 
-        backButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                finish();
+        adapter = new ImageAdapter();
+        gridView.setAdapter(adapter);
+
+        gridView.setOnItemClickListener(
+                new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(
+                            AdapterView<?> parent,
+                            View view,
+                            int position,
+                            long id) {
+
+                        showPhoto(position);
+                    }
+                }
+        );
+    }
+
+    void showPhoto(int position) {
+
+        ImageView image = new ImageView(this);
+        image.setImageURI(photos.get(position));
+        image.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        image.setBackgroundColor(Color.BLACK);
+
+        setContentView(image);
+
+        image.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        createGallery();
+                    }
+                }
+        );
+    }
+
+    class ImageAdapter extends BaseAdapter {
+
+        @Override
+        public int getCount() {
+            return photos.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return photos.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public View getView(
+                int position,
+                View convertView,
+                android.view.ViewGroup parent) {
+
+            ImageView image;
+
+            if (convertView == null) {
+                image = new ImageView(MainActivity.this);
+            } else {
+                image = (ImageView) convertView;
             }
-        });
+
+            int size = parent.getWidth() / 3;
+
+            image.setLayoutParams(
+                    new AbsListView.LayoutParams(size, size)
+            );
+
+            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            image.setImageURI(photos.get(position));
+
+            return image;
+        }
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults) {
 
-        if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
-            imageView.setImageURI(data.getData());
+        super.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                grantResults
+        );
+
+        if (requestCode == 10) {
+            loadPhotos();
         }
     }
 }
