@@ -136,14 +136,10 @@ public class MainActivity extends Activity {
         LinearLayout menu = new LinearLayout(this);
         menu.setGravity(Gravity.CENTER);
 
-        TextView gallery = makeMenu("🖼️
-گالری");
-        TextView albums = makeMenu("📁
-آلبوم‌ها");
-        TextView favorites = makeMenu("❤️
-علاقه‌مندی");
-        TextView trash = makeMenu("🗑️
-سطل");
+        TextView gallery = makeMenu("🖼️ گالری");
+        TextView albums = makeMenu("📁 آلبوم‌ها");
+        TextView favorites = makeMenu("❤️ علاقه‌مندی");
+        TextView trash = makeMenu("🗑️ سطل");
 
         menu.addView(gallery);
         menu.addView(albums);
